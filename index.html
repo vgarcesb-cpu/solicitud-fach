@@ -370,7 +370,7 @@ body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--azul); 
     <img id="logo-header" src="" alt="AGA">
     <div class="titulo">
       <div class="inst">Fuerza Aérea de Chile</div>
-      <div class="sub">Academia de Guerra Aérea</div>
+      <div class="sub">División de Educación · Academia de Guerra Aérea</div>
     </div>
     <div class="folio-mini">
       <span>N° Folio</span>
@@ -650,6 +650,7 @@ window.onload = function() {
   document.getElementById('f-fecha').valueAsDate = hoy;
   var folio = 'ADQ-' + hoy.getFullYear() + '-' + (Math.floor(Math.random()*9000)+1000);
   document.getElementById('folio-input').value = folio;
+  document.getElementById('folio-input').setAttribute('placeholder', folio);
   agregarMaterial();
 };
 
@@ -659,23 +660,19 @@ function irPaso(dir) {
   var siguiente = pasoActual + dir;
   if (siguiente < 1 || siguiente > totalPasos) return;
 
-  var panelActual = document.getElementById('panel-' + pasoActual);
-  var panelSiguiente = document.getElementById('panel-' + siguiente);
-  var siActual = document.getElementById('si-' + pasoActual);
-  var siSiguiente = document.getElementById('si-' + siguiente);
+  // Quitar panel actual
+  document.querySelectorAll('.step-panel').forEach(function(p){ p.classList.remove('activo','saliendo'); });
+  document.querySelectorAll('.step-item').forEach(function(s){ s.classList.remove('activo'); });
 
-  panelActual.classList.remove('activo');
-  panelActual.classList.add('saliendo');
-  setTimeout(function(){ panelActual.classList.remove('saliendo'); }, 350);
-
-  siActual.classList.remove('activo');
-  if (dir === 1) siActual.classList.add('completo');
-  else siActual.classList.remove('completo');
+  // Marcar completados
+  for (var i = 1; i < siguiente; i++) {
+    document.getElementById('si-' + i).classList.add('completo');
+  }
+  document.getElementById('si-' + siguiente).classList.remove('completo');
 
   pasoActual = siguiente;
-  panelSiguiente.classList.add('activo');
-  siSiguiente.classList.add('activo');
-  siSiguiente.classList.remove('completo');
+  document.getElementById('panel-' + pasoActual).classList.add('activo');
+  document.getElementById('si-' + pasoActual).classList.add('activo');
 
   document.getElementById('btn-atras').disabled = (pasoActual === 1);
   var btnSig = document.getElementById('btn-siguiente');
@@ -722,40 +719,82 @@ function renderMateriales() {
   materiales.forEach(function(m, i) {
     var div = document.createElement('div');
     div.className = 'material-item';
-    div.innerHTML =
-      '<div class="item-num">Ítem ' + (i+1) + '</div>' +
-      '<button class="btn-eliminar-item" onclick="eliminarMaterial(' + m.id + ')">×</button>' +
-      '<div class="campo-group"><label class="campo-label">Descripción</label>' +
-      '<input type="text" class="campo-input" placeholder="Nombre del material" value="' + (m.desc||'') + '" onchange="updateMat(' + m.id + ','desc',this.value)"></div>' +
-      '<div class="precio-row">' +
-      '<div><label class="campo-label">Cantidad</label><input type="number" class="campo-input" value="' + m.cant + '" min="1" onchange="updateMat(' + m.id + ','cant',this.value)"></div>' +
-      '<div><label class="campo-label">Unidad</label><input type="text" class="campo-input" placeholder="UN, KG..." value="' + (m.unidad||'') + '" onchange="updateMat(' + m.id + ','unidad',this.value)"></div>' +
-      '<div><label class="campo-label">P. Unitario</label><input type="text" class="campo-input precio-field" placeholder="$0" value="' + (m.precio ? clp(m.precio) : '') + '" onfocus="focusPrecio(this,' + m.id + ')" onblur="blurPrecio(this,' + m.id + ')"></div>' +
-      '<div><label class="campo-label">Subtotal</label><div class="campo-input" style="background:#f0f4ff;color:#1a3a6e;font-weight:bold;font-size:14px;" id="sub-' + m.id + '">' + clp(m.cant * m.precio) + '</div></div>' +
-      '</div>';
+
+    // Descripcion
+    var lblDesc = document.createElement('div');
+    lblDesc.className = 'item-num';
+    lblDesc.textContent = 'Item ' + (i+1);
+
+    var btnElim = document.createElement('button');
+    btnElim.className = 'btn-eliminar-item';
+    btnElim.textContent = 'x';
+    btnElim.style.position = 'absolute';
+    btnElim.style.top = '10px';
+    btnElim.style.right = '10px';
+    btnElim.onclick = (function(mid){ return function(){ eliminarMaterial(mid); }; })(m.id);
+
+    div.appendChild(lblDesc);
+    div.appendChild(btnElim);
+
+    div.appendChild(makeCampo('Descripcion', 'text', m.desc||'', 'Nombre del material', m.id, 'desc'));
+
+    var precioRow = document.createElement('div');
+    precioRow.className = 'precio-row';
+    precioRow.appendChild(makeCampo('Cantidad', 'number', m.cant, '', m.id, 'cant'));
+    precioRow.appendChild(makeCampo('Unidad', 'text', m.unidad||'', 'UN, KG...', m.id, 'unidad'));
+
+    var divPrecio = document.createElement('div');
+    var lblP = document.createElement('label');
+    lblP.className = 'campo-label';
+    lblP.textContent = 'P. Unitario';
+    var inpPrecio = document.createElement('input');
+    inpPrecio.type = 'text';
+    inpPrecio.className = 'campo-input precio-field';
+    inpPrecio.placeholder = '$0';
+    inpPrecio.value = m.precio ? clp(m.precio) : '';
+    inpPrecio.onfocus = (function(mid){ return function(){ var mat=materiales.find(function(x){return x.id===mid;}); this.value=mat&&mat.precio?mat.precio:''; }; })(m.id);
+    inpPrecio.onblur = (function(mid){ return function(){ var val=parseFloat(this.value)||0; materiales.forEach(function(x){if(x.id===mid)x.precio=val;}); renderMateriales(); }; })(m.id);
+    divPrecio.appendChild(lblP);
+    divPrecio.appendChild(inpPrecio);
+    precioRow.appendChild(divPrecio);
+
+    var divSub = document.createElement('div');
+    var lblS = document.createElement('label');
+    lblS.className = 'campo-label';
+    lblS.textContent = 'Subtotal';
+    var subVal = document.createElement('div');
+    subVal.className = 'campo-input';
+    subVal.id = 'sub-' + m.id;
+    subVal.style.background = '#f0f4ff';
+    subVal.style.color = '#1a3a6e';
+    subVal.style.fontWeight = 'bold';
+    subVal.style.fontSize = '14px';
+    subVal.textContent = clp(m.cant * m.precio);
+    divSub.appendChild(lblS);
+    divSub.appendChild(subVal);
+    precioRow.appendChild(divSub);
+
+    div.appendChild(precioRow);
     lista.appendChild(div);
   });
   calcularTotales();
 }
 
-function updateMat(id, campo, val) {
-  materiales.forEach(function(m){ if(m.id===id){ if(campo==='cant'||campo==='precio') m[campo]=parseFloat(val)||0; else m[campo]=val; } });
-  var sub = document.getElementById('sub-'+id);
-  var mat = materiales.find(function(m){return m.id===id;});
-  if(sub && mat) sub.textContent = clp(mat.cant * mat.precio);
-  calcularTotales();
-}
-
-function focusPrecio(input, id) {
-  var mat = materiales.find(function(m){return m.id===id;});
-  input.value = mat && mat.precio ? mat.precio : '';
-}
-
-function blurPrecio(input, id) {
-  var val = parseFloat(input.value) || 0;
-  materiales.forEach(function(m){ if(m.id===id) m.precio = val; });
-  input.value = val ? clp(val) : '';
-  renderMateriales();
+function makeCampo(label, type, value, placeholder, mid, campo) {
+  var wrap = document.createElement('div');
+  var lbl = document.createElement('label');
+  lbl.className = 'campo-label';
+  lbl.textContent = label;
+  var inp = document.createElement('input');
+  inp.type = type;
+  inp.className = 'campo-input';
+  inp.value = value;
+  inp.placeholder = placeholder;
+  if (type === 'number') inp.min = '1';
+  inp.onchange = (function(mid, c){ return function(){ updateMat(mid, c, this.value); }; })(mid, campo);
+  wrap.appendChild(lbl);
+  wrap.appendChild(inp);
+  return wrap;
 }
 
 function calcularTotales() {
