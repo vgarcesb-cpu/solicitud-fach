@@ -610,7 +610,14 @@ window.addEventListener("load", function() {
   document.getElementById("f-fecha").valueAsDate = hoy;
   var folio = "ADQ-" + hoy.getFullYear() + "-" + (Math.floor(Math.random()*9000)+1000);
   document.getElementById("folio-input").value = folio;
-  agregarMaterial();
+  // Recuperar borrador si existe
+  var teniaBorrador = recuperarBorrador();
+  if (!teniaBorrador) agregarMaterial();
+  if (teniaBorrador) mostrarToast("📂 Borrador recuperado");
+
+  // Activar autoguardado en todos los campos
+  activarAutoGuardado();
+
   document.getElementById("btn-atras").addEventListener("click", function(){ irPaso(-1); });
   document.getElementById("btn-siguiente").addEventListener("click", function(){ irPaso(1); });
   document.getElementById("btn-agregar-mat").addEventListener("click", agregarMaterial);
@@ -810,6 +817,7 @@ function calcularTotales() {
   document.getElementById("m-subtotal").textContent = clp(sub);
   document.getElementById("m-iva").textContent = clp(iva);
   document.getElementById("m-total").textContent = clp(sub + iva);
+  guardarBorrador();
 }
 
 // RESUMEN
@@ -888,6 +896,95 @@ function imprimirPDF() {
   document.getElementById("p-total").textContent = clp(sub + iva);
 
   window.print();
+}
+
+// LOCAL STORAGE — Guardar y recuperar borrador
+var STORAGE_KEY = "adquisicion_borrador";
+
+function guardarBorrador() {
+  var borrador = {
+    folio: document.getElementById("folio-input").value,
+    solicitante: document.getElementById("f-solicitante").value,
+    descripcion: document.getElementById("f-descripcion").value,
+    fecha: document.getElementById("f-fecha").value,
+    cuenta: document.getElementById("f-cuenta").value,
+    clasificador: document.getElementById("f-clasificador").value,
+    tarea: document.getElementById("f-tarea").value,
+    nombreCuenta: document.getElementById("f-nombre-cuenta").value,
+    materiales: materiales,
+    firmas: {
+      f1nombre: document.getElementById("f1-nombre").value,
+      f1grado: document.getElementById("f1-grado").value,
+      f1cargo: document.getElementById("f1-cargo").value,
+      f1sub: document.getElementById("f1-sub").value,
+      f2nombre: document.getElementById("f2-nombre").value,
+      f2grado: document.getElementById("f2-grado").value,
+      f2cargo: document.getElementById("f2-cargo").value,
+      f2sub: document.getElementById("f2-sub").value,
+      f3nombre: document.getElementById("f3-nombre").value,
+      f3grado: document.getElementById("f3-grado").value,
+      f3cargo: document.getElementById("f3-cargo").value,
+      f3sub: document.getElementById("f3-sub").value
+    }
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(borrador));
+  } catch(e) {}
+}
+
+function recuperarBorrador() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    var b = JSON.parse(raw);
+
+    if (b.folio) document.getElementById("folio-input").value = b.folio;
+    if (b.solicitante) document.getElementById("f-solicitante").value = b.solicitante;
+    if (b.descripcion) document.getElementById("f-descripcion").value = b.descripcion;
+    if (b.fecha) document.getElementById("f-fecha").value = b.fecha;
+    if (b.cuenta) document.getElementById("f-cuenta").value = b.cuenta;
+    if (b.clasificador) document.getElementById("f-clasificador").value = b.clasificador;
+    if (b.tarea) document.getElementById("f-tarea").value = b.tarea;
+    if (b.nombreCuenta) document.getElementById("f-nombre-cuenta").value = b.nombreCuenta;
+
+    if (b.materiales && b.materiales.length > 0) {
+      materiales = b.materiales;
+      renderMateriales();
+    }
+
+    if (b.firmas) {
+      var f = b.firmas;
+      if (f.f1nombre) document.getElementById("f1-nombre").value = f.f1nombre;
+      if (f.f1grado) document.getElementById("f1-grado").value = f.f1grado;
+      if (f.f1cargo) document.getElementById("f1-cargo").value = f.f1cargo;
+      if (f.f1sub) document.getElementById("f1-sub").value = f.f1sub;
+      if (f.f2nombre) document.getElementById("f2-nombre").value = f.f2nombre;
+      if (f.f2grado) document.getElementById("f2-grado").value = f.f2grado;
+      if (f.f2cargo) document.getElementById("f2-cargo").value = f.f2cargo;
+      if (f.f2sub) document.getElementById("f2-sub").value = f.f2sub;
+      if (f.f3nombre) document.getElementById("f3-nombre").value = f.f3nombre;
+      if (f.f3grado) document.getElementById("f3-grado").value = f.f3grado;
+      if (f.f3cargo) document.getElementById("f3-cargo").value = f.f3cargo;
+      if (f.f3sub) document.getElementById("f3-sub").value = f.f3sub;
+    }
+    return true;
+  } catch(e) { return false; }
+}
+
+function limpiarBorrador() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+}
+
+function activarAutoGuardado() {
+  var campos = ["folio-input","f-solicitante","f-descripcion","f-fecha",
+    "f-cuenta","f-clasificador","f-tarea","f-nombre-cuenta",
+    "f1-nombre","f1-grado","f1-cargo","f1-sub",
+    "f2-nombre","f2-grado","f2-cargo","f2-sub",
+    "f3-nombre","f3-grado","f3-cargo","f3-sub"];
+  campos.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener("input", guardarBorrador);
+  });
 }
 
 // SERVICE WORKER
