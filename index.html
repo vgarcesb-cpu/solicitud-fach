@@ -317,23 +317,19 @@ body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--azul); 
 /* =============================================
    HISTORIAL
    ============================================= */
-.btn-historial {
-  position: fixed;
-  bottom: 82px;
-  right: 16px;
-  width: 52px; height: 52px;
-  border-radius: 50%;
+.btn-historial-nav {
+  width: 52px; height: 48px;
+  border-radius: 10px;
   background: linear-gradient(135deg, #c8a84b, #a07830);
   color: #fff;
-  border: 2px solid #fff;
-  font-size: 22px;
+  border: none;
+  font-size: 20px;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(200,168,75,0.6);
-  z-index: 500;
-  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(200,168,75,0.4);
+  flex-shrink: 0;
   transition: all 0.2s;
 }
-.btn-historial:active { transform: scale(0.92); }
+.btn-historial-nav:active { transform: scale(0.92); }
 
 .historial-overlay {
   position: fixed; inset: 0;
@@ -595,9 +591,6 @@ body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--azul); 
     <button class="btn-nav btn-atras" id="btn-atras" disabled>← Atrás</button>
     <button class="btn-nav btn-siguiente" id="btn-siguiente">Siguiente →</button>
   </div>
-
-  <!-- BOTÓN FLOTANTE HISTORIAL -->
-  <button class="btn-historial" id="btn-historial">📋</button>
 
   <!-- PANEL HISTORIAL -->
   <div class="historial-overlay" id="historial-overlay">
