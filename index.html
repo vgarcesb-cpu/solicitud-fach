@@ -507,6 +507,21 @@ body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--azul); 
     <button class="btn-nav btn-siguiente" id="btn-siguiente">Siguiente →</button>
   </div>
 
+  <!-- BOTÓN FLOTANTE HISTORIAL -->
+  <button class="btn-historial" id="btn-historial">📋</button>
+
+  <!-- PANEL HISTORIAL -->
+  <div class="historial-overlay" id="historial-overlay">
+    <div class="historial-panel">
+      <div class="historial-header">
+        <span class="historial-title">📋 Historial de Solicitudes</span>
+        <button class="historial-cerrar" id="historial-cerrar">✕</button>
+      </div>
+      <div class="historial-lista" id="historial-lista"></div>
+      <button class="historial-limpiar" id="historial-limpiar">🗑 Limpiar historial</button>
+    </div>
+  </div>
+
 </div>
 
 <!-- ===== DOCUMENTO DE IMPRESIÓN ===== -->
@@ -617,6 +632,14 @@ window.addEventListener("load", function() {
 
   // Activar autoguardado en todos los campos
   activarAutoGuardado();
+
+  // Historial
+  document.getElementById("btn-historial").addEventListener("click", abrirHistorial);
+  document.getElementById("historial-cerrar").addEventListener("click", cerrarHistorial);
+  document.getElementById("historial-limpiar").addEventListener("click", limpiarHistorial);
+  document.getElementById("historial-overlay").addEventListener("click", function(e) {
+    if (e.target === this) cerrarHistorial();
+  });
 
   document.getElementById("btn-atras").addEventListener("click", function(){ irPaso(-1); });
   document.getElementById("btn-siguiente").addEventListener("click", function(){ irPaso(1); });
@@ -896,6 +919,77 @@ function imprimirPDF() {
   document.getElementById("p-total").textContent = clp(sub + iva);
 
   window.print();
+}
+
+// HISTORIAL
+var HISTORIAL_KEY = "adquisicion_historial";
+
+function guardarEnHistorial() {
+  try {
+    var sub = materiales.reduce(function(s, m) { return s + (m.cant * m.precio); }, 0);
+    var total = sub * 1.19;
+    var registro = {
+      id: Date.now(),
+      folio: document.getElementById("folio-input").value,
+      solicitante: document.getElementById("f-solicitante").value,
+      descripcion: document.getElementById("f-descripcion").value,
+      fecha: document.getElementById("f-fecha").value,
+      total: total,
+      nItems: materiales.filter(function(m){ return m.desc; }).length
+    };
+    var historial = obtenerHistorial();
+    historial.unshift(registro);
+    localStorage.setItem(HISTORIAL_KEY, JSON.stringify(historial));
+  } catch(e) {}
+}
+
+function obtenerHistorial() {
+  try {
+    var raw = localStorage.getItem(HISTORIAL_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function abrirHistorial() {
+  var overlay = document.getElementById("historial-overlay");
+  var lista = document.getElementById("historial-lista");
+  var historial = obtenerHistorial();
+
+  lista.innerHTML = "";
+
+  if (historial.length === 0) {
+    lista.innerHTML = "<div class=\"historial-vacio\"><div class=\"h-icon\">📭</div>No hay registros aún.<br>Los documentos aparecerán aquí después de imprimir.</div>";
+  } else {
+    historial.forEach(function(r) {
+      var div = document.createElement("div");
+      div.className = "historial-item";
+      var fechaDisplay = r.fecha ? r.fecha.split("-").reverse().join("/") : "—";
+      var totalDisplay = r.total ? ("$" + Math.round(r.total).toLocaleString("es-CL")) : "$0";
+      div.innerHTML =
+        "<div class=\"h-folio\">" + (r.folio || "Sin folio") + "</div>" +
+        "<div class=\"h-desc\">" + (r.solicitante || "Sin nombre") + "</div>" +
+        "<div class=\"h-meta\">" +
+          "<span>" + fechaDisplay + " · " + (r.nItems || 0) + " ítem(s)</span>" +
+          "<span class=\"h-total\">" + totalDisplay + "</span>" +
+        "</div>" +
+        "<div style=\"font-size:11px;color:#aaa;margin-top:3px;\">" + (r.descripcion || "") + "</div>";
+      lista.appendChild(div);
+    });
+  }
+
+  overlay.classList.add("abierto");
+}
+
+function cerrarHistorial() {
+  document.getElementById("historial-overlay").classList.remove("abierto");
+}
+
+function limpiarHistorial() {
+  if (confirm("¿Eliminar todo el historial?")) {
+    try { localStorage.removeItem(HISTORIAL_KEY); } catch(e) {}
+    cerrarHistorial();
+    mostrarToast("🗑 Historial eliminado");
+  }
 }
 
 // LOCAL STORAGE — Guardar y recuperar borrador
