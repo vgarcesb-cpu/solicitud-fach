@@ -890,6 +890,17 @@ function imprimirPDF() {
   window.print();
 }
 
+// SERVICE WORKER
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function() {
+    navigator.serviceWorker.register("./sw.js").then(function() {
+      console.log("Service Worker registrado ✅");
+    }).catch(function(err) {
+      console.log("Error SW:", err);
+    });
+  });
+}
+
 // UTILS
 function clp(v) {
   return "$" + Math.round(v || 0).toLocaleString("es-CL");
