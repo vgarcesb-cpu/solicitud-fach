@@ -1,5 +1,5 @@
 // Service Worker – Solicitud de Adquisición AGA
-var CACHE_NAME = "adquisicion-v1";
+var CACHE_NAME = "adquisicion-v3";
 var ARCHIVOS = [
   "./index.html",
   "./manifest.json",
