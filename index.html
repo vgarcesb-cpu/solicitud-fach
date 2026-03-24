@@ -1007,6 +1007,8 @@ function imprimirPDF() {
   document.getElementById("p-iva").textContent = clp(iva);
   document.getElementById("p-total").textContent = clp(sub + iva);
 
+  guardarEnHistorial();
+  limpiarBorrador();
   window.print();
 }
 
